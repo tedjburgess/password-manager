@@ -1,34 +1,153 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '4.1.1'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '4.1.1'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.diffplug.spotless' version '8.10.3'
+    id 'jacoco'
 }
 
 group = 'com.tedjburgess'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-	//implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-	//runtimeOnly 'org.postgresql:postgresql'
-	//testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+
+/*
+ * TESTING
+ */
+
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
+}
+
+
+/*
+ * ONLY CREATE THE EXECUTABLE SPRING BOOT JAR
+ *
+ * Prevents Gradle from also creating the confusing "-plain.jar".
+ */
+
+tasks.named('jar') {
+    enabled = false
+}
+
+
+/*
+ * FORMATTING
+ *
+ * ./gradlew format
+ */
+
+spotless {
+    java {
+        googleJavaFormat()
+    }
+}
+
+tasks.register('format') {
+    group = 'development'
+    description = 'Formats all Java source code.'
+    dependsOn tasks.named('spotlessApply')
+}
+
+
+/*
+ * TEST COVERAGE
+ *
+ * ./gradlew coverage
+ *
+ * Report:
+ * build/reports/jacoco/test/html/index.html
+ */
+
+tasks.named('jacocoTestReport') {
+    dependsOn tasks.named('test')
+
+    reports {
+        html.required = true
+        xml.required = true
+        csv.required = false
+    }
+}
+
+tasks.register('coverage') {
+    group = 'verification'
+    description = 'Runs tests and generates the JaCoCo coverage report.'
+    dependsOn tasks.named('jacocoTestReport')
+}
+
+
+/*
+ * VERIFY EVERYTHING
+ *
+ * ./gradlew verify
+ *
+ * Order:
+ * 1. Format Java
+ * 2. Compile
+ * 3. Run tests
+ * 4. Generate coverage
+ */
+
+tasks.named('compileJava') {
+    mustRunAfter tasks.named('spotlessApply')
+}
+
+tasks.named('compileTestJava') {
+    mustRunAfter tasks.named('spotlessApply')
+}
+
+tasks.register('verify') {
+    group = 'verification'
+    description = 'Formats code, runs tests, and generates coverage.'
+
+    dependsOn tasks.named('spotlessApply')
+    dependsOn tasks.named('jacocoTestReport')
+}
+
+
+/*
+ * DOCKER
+ *
+ * ./gradlew dockerBuild
+ * ./gradlew dockerRun
+ */
+
+tasks.register('dockerBuild', Exec) {
+    group = 'docker'
+    description = 'Verifies the project and builds the Docker image.'
+
+    dependsOn tasks.named('verify')
+    dependsOn tasks.named('bootJar')
+
+    commandLine 'docker', 'build', '-t', 'passwordmanager', '.'
+}
+
+tasks.named('bootJar') {
+    mustRunAfter tasks.named('verify')
+}
+
+tasks.register('dockerRun', Exec) {
+    group = 'docker'
+    description = 'Runs the existing passwordmanager Docker image.'
+
+    commandLine 'docker', 'run', '--rm', '-p', '8080:8080', 'passwordmanager'
 }
