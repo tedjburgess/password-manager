@@ -9,6 +9,8 @@ public class App {
     }
 
     public static void main(String[] args) {
-        System.out.println(new App().getGreeting());
+        Database.initialize();
+        UserService user = new UserService("Ted");
+        user.registerUser();
     }
 }
