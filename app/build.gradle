@@ -25,6 +25,8 @@ dependencies {
     implementation libs.guava
     // SQLite
     implementation 'org.xerial:sqlite-jdbc:3.54.1.0'
+    // Argon 2 id
+    implementation 'de.mkammerer:argon2-jvm:2.12'
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
