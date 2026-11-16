@@ -59,7 +59,7 @@ public class CryptoUtils {
         return secretKey;
     }
 
-    public static EncryptedVaultKey encryptVaultEncryptionKey(byte[] unlockingKey, SecretKey vaultKey) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
+    private static EncryptedVaultKey encryptVaultEncryptionKey(byte[] unlockingKey, SecretKey vaultKey) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
         SecretKey aesKey = new SecretKeySpec(unlockingKey, "AES");  
         byte[] nonce = new byte[12]; //12 random bytes
         new SecureRandom().nextBytes(nonce); //Random number generator, fills with 12 random bytes
@@ -69,6 +69,13 @@ public class CryptoUtils {
         byte[] encryptedVaultKey = cipher.doFinal(vaultKey.getEncoded());
         return new EncryptedVaultKey(encryptedVaultKey, nonce);
               
+    }
+
+    public static EncryptedVaultKey generateSecureEncryptedVaultKey(char[] masterPassword, byte[] salt) throws NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
+        byte[] unlockingKey = deriveUnlockingKey(masterPassword, salt);
+        SecretKey vaultKey = createVaultEncryptionKey();
+        return encryptVaultEncryptionKey(unlockingKey, vaultKey);
+   
     }
 }
 
