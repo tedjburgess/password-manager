@@ -1,11 +1,20 @@
 
 package org.example;
 
+import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import java.nio.charset.StandardCharsets;
 
@@ -13,6 +22,7 @@ import de.mkammerer.argon2.Argon2Advanced;
 import de.mkammerer.argon2.Argon2Factory;
 
 public class CryptoUtils {
+    public record EncryptedVaultKey(byte[] ciphertext, byte[] nonce) {}
 
     public static byte[] generateSalt() {
         SecureRandom random = new SecureRandom();
@@ -42,11 +52,23 @@ public class CryptoUtils {
         return unlockingKey;
     }
 
-    public static SecretKey keyGenerator() throws NoSuchAlgorithmException {
+    private static SecretKey createVaultEncryptionKey() throws NoSuchAlgorithmException {
         KeyGenerator keyGen = KeyGenerator.getInstance("AES");
         keyGen.init(256);
         SecretKey secretKey = keyGen.generateKey();
         return secretKey;
+    }
+
+    public static EncryptedVaultKey encryptVaultEncryptionKey(byte[] unlockingKey, SecretKey vaultKey) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
+        SecretKey aesKey = new SecretKeySpec(unlockingKey, "AES");  
+        byte[] nonce = new byte[12]; //12 random bytes
+        new SecureRandom().nextBytes(nonce); //Random number generator, fills with 12 random bytes
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        GCMParameterSpec spec = new GCMParameterSpec(128, nonce); //AES-GCM settings
+        cipher.init(Cipher.ENCRYPT_MODE, aesKey, spec);
+        byte[] encryptedVaultKey = cipher.doFinal(vaultKey.getEncoded());
+        return new EncryptedVaultKey(encryptedVaultKey, nonce);
+              
     }
 }
 
