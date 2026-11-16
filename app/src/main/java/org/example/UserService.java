@@ -15,11 +15,13 @@ public class UserService {
     }
 
     public long registerUser() {
+        byte[] userSalt = CryptoUtils.generateSalt();
+        
         String url = "jdbc:sqlite:vault.db";
 
         String sql = """
-                INSERT INTO users (username)
-                VALUES(?)
+                INSERT INTO users (username, salt)
+                VALUES(?, ?)
                 RETURNING id;
                 """;
 
@@ -27,6 +29,8 @@ public class UserService {
             PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setString(1, username);
+            statement.setBytes(2, userSalt);
+            
 
             ResultSet result = statement.executeQuery();
 

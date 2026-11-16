@@ -15,7 +15,8 @@ public class Database {
         String sql = """
                 CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY,
-                    username TEXT NOT NULL UNIQUE
+                    username TEXT NOT NULL UNIQUE,
+                    salt BLOB NOT NULL UNIQUE
                 )
                 """;
 
