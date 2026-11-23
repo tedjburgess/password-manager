@@ -3,6 +3,7 @@
  */
 package org.example;
 
+import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -21,6 +22,12 @@ public class App {
         UserService user = new UserService("Ted");
         String passwordString = "password";
         char[] password = passwordString.toCharArray();
-        user.registerUser(password);
+        try {
+            boolean login = user.signIn(password);
+            System.out.println("Result: " + login);
+        } catch (GeneralSecurityException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 }
