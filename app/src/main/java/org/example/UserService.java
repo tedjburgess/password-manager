@@ -31,19 +31,23 @@ public class UserService {
 
     public long registerUser(char[] masterPassword) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
         byte[] salt = CryptoUtils.generateSalt();
+        byte[] ciphertext;
+        byte[] nonce;
         
         //vault key
-        CryptoUtils.EncryptedVaultKey encryptedVaultKeyObject = CryptoUtils.generateSecureEncryptedVaultKey(masterPassword, salt);
-        Arrays.fill(masterPassword, '\0'); //Reset master password to 0's
-        byte[] ciphertext = encryptedVaultKeyObject.ciphertext();
-        byte[] nonce = encryptedVaultKeyObject.nonce();
-        
+        try {
+            CryptoUtils.EncryptedVaultKey encryptedVaultKeyObject = CryptoUtils.generateSecureEncryptedVaultKey(masterPassword, salt);
+            ciphertext = encryptedVaultKeyObject.ciphertext();
+            nonce = encryptedVaultKeyObject.nonce();            
+        } finally {
+            Arrays.fill(masterPassword, '\0');
+        }
 
         String url = "jdbc:sqlite:vault.db";
 
         String sql = """
-                INSERT INTO users (username, salt, encrypted_vault_key, vault_key_nonce, argon2_iterations, argon2_parallelism)
-                VALUES(?, ?, ?, ?, 1, 1)
+                INSERT INTO users (username, salt, encrypted_vault_key, vault_key_nonce, argon2_iterations, argon2_memory, argon2_parallelism)
+                VALUES(?, ?, ?, ?, 3, 65536, 1)
                 RETURNING id;
                 """;
 
