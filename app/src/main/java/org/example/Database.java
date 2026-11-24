@@ -20,6 +20,7 @@ public class Database {
                     encrypted_vault_key BLOB NOT NULL UNIQUE,
                     vault_key_nonce BLOB NOT NULL UNIQUE,
                     argon2_iterations INTEGER NOT NULL,
+                    argon2_memory,
                     argon2_parallelism INTEGER NOT NULL
                 )
                 """;

@@ -22,6 +22,7 @@ public class App {
         UserService user = new UserService("Ted");
         String passwordString = "password";
         char[] password = passwordString.toCharArray();
+
         try {
             boolean login = user.signIn(password);
             System.out.println("Result: " + login);
