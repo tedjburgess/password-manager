@@ -6,6 +6,9 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
+import java.util.Arrays;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -13,9 +16,14 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import de.mkammerer.argon2.Argon2Advanced;
@@ -23,6 +31,7 @@ import de.mkammerer.argon2.Argon2Factory;
 
 public class CryptoUtils {
     public record EncryptedVaultKey(byte[] ciphertext, byte[] nonce) {}
+    public record EncryptedServicePassword(byte[] ciphertext, byte[] nonce) {}
 
     public static byte[] generateSalt() {
         SecureRandom random = new SecureRandom();
@@ -78,6 +87,32 @@ public class CryptoUtils {
    
     }
 
+    public static EncryptedServicePassword encryptServicePassword(SecretKey aesKey, char[] servicePassword) throws IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchPaddingException {
+        // Convert password to bytes
+        byte[] bytePassword = new byte[32];
+        ByteBuffer byteBuffer = ByteBuffer.allocate(32);
+        try {
+            CharBuffer charBuffer = CharBuffer.wrap(servicePassword);
+            byteBuffer = Charset.forName("UTF-8").encode(charBuffer);
+            bytePassword = Arrays.copyOfRange(byteBuffer.array(),
+            byteBuffer.position(), byteBuffer.limit());
+            
+            byte[] nonce = new byte[12]; //12 random bytes
+            new SecureRandom().nextBytes(nonce); //Random number generator, fills with 12 random bytes
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            GCMParameterSpec spec = new GCMParameterSpec(128, nonce); //AES-GCM settings
+            cipher.init(Cipher.ENCRYPT_MODE, aesKey, spec);
+            byte[] encryptedPassword = cipher.doFinal(bytePassword);
+            return new EncryptedServicePassword(encryptedPassword, nonce);            
+        } finally {
+            Arrays.fill(servicePassword, '\0');
+            Arrays.fill(bytePassword, (byte) 0);
+            //Reset byte buffer
+            final byte[] byteBufferArray = byteBuffer.array();
+            Arrays.fill(byteBufferArray, (byte) 0);
+        }
+
+    }
     
 }
 
