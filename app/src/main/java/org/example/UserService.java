@@ -100,7 +100,7 @@ public class UserService {
                 
                 //Decrypt stored value
                 try {
-                    vaultKey = decryptVaultKey(unlockingKey, encryptedVaultKey, nonce);
+                    vaultKey = CryptoUtils.decryptVaultKey(unlockingKey, encryptedVaultKey, nonce);
                 } catch (AEADBadTagException e) {
                     System.out.println("Invalid password");
                     return false;
@@ -120,28 +120,6 @@ public class UserService {
         } finally {
             Arrays.fill(masterPassword, '\0');
         }
-
-        
     }
-
-    private static SecretKey decryptVaultKey(
-            byte[] unlockingKey,
-            byte[] encryptedVaultKey,
-            byte[] nonce
-    ) throws GeneralSecurityException {
-
-        SecretKey aesKey = new SecretKeySpec(unlockingKey, "AES");
-
-        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-
-        GCMParameterSpec spec = new GCMParameterSpec(128, nonce);
-
-        cipher.init(Cipher.DECRYPT_MODE, aesKey, spec);
-
-        byte[] vaultKeyBytes = cipher.doFinal(encryptedVaultKey);
-
-        return new SecretKeySpec(vaultKeyBytes, "AES");
-    }
-            
 
 }

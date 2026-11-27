@@ -113,6 +113,25 @@ public class CryptoUtils {
         }
 
     }
+
+    public static SecretKey decryptVaultKey(
+            byte[] unlockingKey,
+            byte[] encryptedVaultKey,
+            byte[] nonce
+    ) throws GeneralSecurityException {
+
+        SecretKey aesKey = new SecretKeySpec(unlockingKey, "AES");
+
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+
+        GCMParameterSpec spec = new GCMParameterSpec(128, nonce);
+
+        cipher.init(Cipher.DECRYPT_MODE, aesKey, spec);
+
+        byte[] vaultKeyBytes = cipher.doFinal(encryptedVaultKey);
+
+        return new SecretKeySpec(vaultKeyBytes, "AES");
+    }
     
 }
 
